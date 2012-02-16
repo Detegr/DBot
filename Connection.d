@@ -2,6 +2,7 @@ import std.stdio;
 import std.socket;
 import std.array;
 import std.string;
+import std.format;
 
 class Irc
 {
@@ -25,12 +26,7 @@ class Irc
 	{
 		if(msg[0]!=':' || indexOf(msg, "PRIVMSG")==-1 || indexOf(msg, '!')==-1) return;
 		char[] nick, host, cmd, channel, data;
-		char[] msgd=msg.dup;
-		nick=msgd[1 .. indexOf(msg, '!')];
-		host=msgd[indexOf(msg,'!')+1 .. indexOf(msg, ' ')];
-		cmd="PRIVMSG".dup;
-		channel=msgd[indexOf(msg,cmd)+cmd.length+1 .. lastIndexOf(msg,':')-1];
-		data=msgd[lastIndexOf(msg,':')+1 .. msg.length];
+		formattedRead(msg, ":%s!%s %s %s :%s", &nick, &host, &cmd, &channel, &data);
 		writeln("NICK: " ~ nick ~ "\nHOST: " ~ host ~ "\nCMD: " ~ cmd ~ "\nCHANNEL: " ~ channel ~ "\nDATA: " ~ data);
 	}
 }
