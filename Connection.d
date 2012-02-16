@@ -23,9 +23,15 @@ class Irc
 	}
 	static void Parse(string msg)
 	{
-		if(msg[0]!=':') return;
+		if(msg[0]!=':' || indexOf(msg, "PRIVMSG")==-1 || indexOf(msg, '!')==-1) return;
 		char[] nick, host, cmd, channel, data;
-		nick=msg.dup;
+		char[] msgd=msg.dup;
+		nick=msgd[1 .. indexOf(msg, '!')];
+		host=msgd[indexOf(msg,'!')+1 .. indexOf(msg, ' ')];
+		cmd="PRIVMSG".dup;
+		channel=msgd[indexOf(msg,cmd)+cmd.length+1 .. lastIndexOf(msg,':')-1];
+		data=msgd[lastIndexOf(msg,':')+1 .. msg.length];
+		writeln("NICK: " ~ nick ~ "\nHOST: " ~ host ~ "\nCMD: " ~ cmd ~ "\nCHANNEL: " ~ channel ~ "\nDATA: " ~ data);
 	}
 }
 
@@ -95,18 +101,20 @@ class Connection
 		}
 }
 
+bool running=true;
 void main()
 {
 	scope auto c = new Connection();
 	c.Connect(new InternetAddress("irc.quakenet.org", 6667));
-	while(true)
+	while(running)
 	{
 		string[] msgs=c.Recv();
 		foreach(string s ; msgs)
 		{
+			if(s.length>=5 && s[0 .. 5]=="ERROR") running=false;
 			writeln(s);
 			c.PingPong(s);
-			//Irc.Parse(s);
+			Irc.Parse(s);
 		}
 	}
 }
