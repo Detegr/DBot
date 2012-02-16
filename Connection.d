@@ -14,7 +14,7 @@ class Connection
 	{
 		Disconnect();
 	}
-	void Connect(Address addr)
+	void Connect(scope Address addr)
 	{
 		socket.connect(addr);
 	}
