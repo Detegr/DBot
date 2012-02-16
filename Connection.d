@@ -24,7 +24,6 @@ class Connection
 		string nick;
 		string realname;
 		TcpSocket socket;
-		Address[] address;
 
 	public:
 		this(string nick="DBot", string realname="DBot")
