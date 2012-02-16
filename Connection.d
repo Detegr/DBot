@@ -1,5 +1,6 @@
 import std.stdio;
 import std.socket;
+import std.array;
 
 class Irc
 {
@@ -25,6 +26,16 @@ class Connection
 		string realname;
 		TcpSocket socket;
 
+		void PingPong(string msg)
+		{
+			if(msg[0 .. 4]=="PING")
+			{
+				char[] smsg = msg.dup;
+				smsg[1]='O';
+				Send(smsg.idup);
+			}
+		}
+
 	public:
 		this(string nick="DBot", string realname="DBot")
 		{
@@ -47,13 +58,13 @@ class Connection
 		{
 			socket.send(msg);
 		}
-		char[] Recv()
+		string[] Recv()
 		{
 			ptrdiff_t recvd;
 			char[BUFSIZE] buf = new char[BUFSIZE];
 			recvd=socket.receive(buf); // socket.receive() will check buf's bounds.
 			// However, if recvd>BUFSIZE, some funny things will probably occur...
-			return buf[0 .. recvd-2]; // Slice out \r\n
+			return buf[0 .. recvd-2].idup.split("\r\n"); // Slice out the last \r\n
 		}
 		void Disconnect()
 		{
@@ -68,6 +79,11 @@ void main()
 	c.Connect(new InternetAddress("irc.quakenet.org", 6667));
 	while(true)
 	{
-		writeln(c.Recv());
+		string[] msgs=c.Recv();
+		foreach(string s ; msgs)
+		{
+			c.PingPong(s);
+			writeln(s);
+		}
 	}
 }
