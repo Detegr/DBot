@@ -3,19 +3,24 @@ import std.socket;
 
 class Connection
 {
+	string nick;
+	string realname;
 	TcpSocket socket;
 	Address[] address;
 
-	this()
+	this(string nick="DBot", string realname="DBot")
 	{
+		this.nick=nick;
+		this.realname=realname;
 		socket = new TcpSocket(AddressFamily.INET);
 	}
 	~this()
 	{
 		Disconnect();
 	}
-	void Connect(scope Address addr)
+	void Connect(scope InternetAddress addr)
 	{
+		writeln("Connecting to " ~ addr.toHostNameString() ~ ":" ~ addr.toPortString());
 		socket.connect(addr);
 	}
 	void Disconnect()
