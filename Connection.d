@@ -1,6 +1,7 @@
 import std.stdio;
 import std.socket;
 import std.array;
+import std.string;
 
 class Irc
 {
@@ -16,6 +17,10 @@ class Irc
 	{
 		return (msg ~ "\r\n");
 	}
+	static char[] Message(char[] msg)
+	{
+		return (msg ~ "\r\n");
+	}
 }
 
 class Connection
@@ -28,10 +33,10 @@ class Connection
 
 		void PingPong(char[] msg)
 		{
-			if(msg[0 .. 4]=="PING")
+			if(msg.length>4 && msg[0 .. 4]=="PING")
 			{
 				msg[1]='O';
-				Send(msg);
+				Send(Irc.Message(msg));
 			}
 		}
 
@@ -55,19 +60,26 @@ class Connection
 		}
 		void Send(const string msg)
 		{
+			//writeln("Sent: " ~ msg);
 			socket.send(msg);
 		}
 		void Send(char[] msg)
 		{
+			//writeln("Sent: " ~ msg);
 			socket.send(msg);
 		}
 		char[][] Recv()
 		{
 			ptrdiff_t recvd;
 			char[BUFSIZE] buf = new char[BUFSIZE];
-			recvd=socket.receive(buf); // socket.receive() will check buf's bounds.
-			// However, if recvd>BUFSIZE, some funny things will probably occur...
-			return buf[0 .. recvd-2].split("\r\n"); // Slice out the last \r\n
+			char[] ret;
+			do
+			{
+				recvd=socket.receive(buf); // socket.receive() will check buf's bounds.
+				if(!ret) ret=replace(buf[0 .. recvd].dup, "\r\n", "\n");
+				else ret=ret ~ replace(buf[0 .. recvd].dup, "\r\n", "\n");
+			} while(recvd==BUFSIZE || ret[ret.length-1]!='\n');
+			return split(ret,"\n");
 		}
 		void Disconnect()
 		{
@@ -85,8 +97,11 @@ void main()
 		char[][] msgs=c.Recv();
 		foreach(char[] s ; msgs)
 		{
-			c.PingPong(s);
-			writeln(s);
+			if(s.length) // Ugh, ugly :(
+			{
+				writeln(s);
+				c.PingPong(s);
+			}
 		}
 	}
 }
