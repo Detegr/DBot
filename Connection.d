@@ -47,17 +47,13 @@ class Connection
 		{
 			socket.send(msg);
 		}
-		void Recv()
+		char[] Recv()
 		{
 			ptrdiff_t recvd;
 			char[BUFSIZE] buf = new char[BUFSIZE];
-			do
-			{
-				recvd=socket.receive(buf); // socket.receive() will check buf's bounds.
-				buf[recvd-2]=0; // Slice out \r\n
-				writeln(buf);
-			}
-			while(recvd>0);
+			recvd=socket.receive(buf); // socket.receive() will check buf's bounds.
+			// However, if recvd>BUFSIZE, some funny things will probably occur...
+			return buf[0 .. recvd-2]; // Slice out \r\n
 		}
 		void Disconnect()
 		{
@@ -70,5 +66,8 @@ void main()
 {
 	scope auto c = new Connection();
 	c.Connect(new InternetAddress("irc.quakenet.org", 6667));
-	c.Recv();
+	while(true)
+	{
+		writeln(c.Recv());
+	}
 }
