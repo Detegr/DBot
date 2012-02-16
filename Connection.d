@@ -21,6 +21,12 @@ class Irc
 	{
 		return (msg ~ "\r\n");
 	}
+	static void Parse(string msg)
+	{
+		if(msg[0]!=':') return;
+		char[] nick, host, cmd, channel, data;
+		nick=msg.dup;
+	}
 }
 
 class Connection
@@ -31,12 +37,13 @@ class Connection
 		string realname;
 		TcpSocket socket;
 
-		void PingPong(char[] msg)
+		void PingPong(string msg)
 		{
 			if(msg.length>4 && msg[0 .. 4]=="PING")
 			{
-				msg[1]='O';
-				Send(Irc.Message(msg));
+				char[] smsg=msg.dup;
+				smsg[1]='O';
+				Send(Irc.Message(smsg));
 			}
 		}
 
@@ -68,18 +75,18 @@ class Connection
 			//writeln("Sent: " ~ msg);
 			socket.send(msg);
 		}
-		char[][] Recv()
+		string[] Recv()
 		{
 			ptrdiff_t recvd;
 			char[BUFSIZE] buf = new char[BUFSIZE];
 			char[] ret;
 			do
 			{
-				recvd=socket.receive(buf); // socket.receive() will check buf's bounds.
-				if(!ret) ret=replace(buf[0 .. recvd].dup, "\r\n", "\n");
-				else ret=ret ~ replace(buf[0 .. recvd].dup, "\r\n", "\n");
+				recvd=socket.receive(buf);
+				if(!ret) ret=replace(buf[0 .. recvd], "\r\n", "\n");
+				else ret=ret ~ replace(buf[0 .. recvd], "\r\n", "\n");
 			} while(recvd==BUFSIZE || ret[ret.length-1]!='\n');
-			return split(ret,"\n");
+			return splitLines(ret.idup);
 		}
 		void Disconnect()
 		{
@@ -94,14 +101,12 @@ void main()
 	c.Connect(new InternetAddress("irc.quakenet.org", 6667));
 	while(true)
 	{
-		char[][] msgs=c.Recv();
-		foreach(char[] s ; msgs)
+		string[] msgs=c.Recv();
+		foreach(string s ; msgs)
 		{
-			if(s.length) // Ugh, ugly :(
-			{
-				writeln(s);
-				c.PingPong(s);
-			}
+			writeln(s);
+			c.PingPong(s);
+			//Irc.Parse(s);
 		}
 	}
 }
