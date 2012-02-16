@@ -26,13 +26,12 @@ class Connection
 		string realname;
 		TcpSocket socket;
 
-		void PingPong(string msg)
+		void PingPong(char[] msg)
 		{
 			if(msg[0 .. 4]=="PING")
 			{
-				char[] smsg = msg.dup;
-				smsg[1]='O';
-				Send(smsg.idup);
+				msg[1]='O';
+				Send(msg);
 			}
 		}
 
@@ -58,13 +57,17 @@ class Connection
 		{
 			socket.send(msg);
 		}
-		string[] Recv()
+		void Send(char[] msg)
+		{
+			socket.send(msg);
+		}
+		char[][] Recv()
 		{
 			ptrdiff_t recvd;
 			char[BUFSIZE] buf = new char[BUFSIZE];
 			recvd=socket.receive(buf); // socket.receive() will check buf's bounds.
 			// However, if recvd>BUFSIZE, some funny things will probably occur...
-			return buf[0 .. recvd-2].idup.split("\r\n"); // Slice out the last \r\n
+			return buf[0 .. recvd-2].split("\r\n"); // Slice out the last \r\n
 		}
 		void Disconnect()
 		{
@@ -79,8 +82,8 @@ void main()
 	c.Connect(new InternetAddress("irc.quakenet.org", 6667));
 	while(true)
 	{
-		string[] msgs=c.Recv();
-		foreach(string s ; msgs)
+		char[][] msgs=c.Recv();
+		foreach(char[] s ; msgs)
 		{
 			c.PingPong(s);
 			writeln(s);
