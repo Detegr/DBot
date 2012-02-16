@@ -3,6 +3,7 @@ import std.socket;
 import std.array;
 import std.string;
 import std.format;
+import std.utf;
 
 class Irc
 {
@@ -22,14 +23,40 @@ class Irc
 	{
 		return (msg ~ "\r\n");
 	}
-	static void Parse(string msg)
+	static ParsedMessage Parse(string msg)
 	{
-		if(msg[0]!=':' || indexOf(msg, "PRIVMSG")==-1 || indexOf(msg, '!')==-1) return;
-		char[] nick, host, cmd, channel, data;
-		formattedRead(msg, ":%s!%s %s %s :%s", &nick, &host, &cmd, &channel, &data);
-		writeln("NICK: " ~ nick ~ "\nHOST: " ~ host ~ "\nCMD: " ~ cmd ~ "\nCHANNEL: " ~ channel ~ "\nDATA: " ~ data);
+		if(msg[0]!=':' || indexOf(msg, "PRIVMSG")==-1 || indexOf(msg, '!')==-1) throw new Exception("Not a PRIVMSG");
+		return new ParsedMessage(msg);
 	}
 }
+
+class ParsedMessage
+{
+	private:
+		string nick, host, cmd, channel, data;
+	public:
+		this(string msg)
+		{
+			formattedRead(msg, ":%s!%s %s %s :%s", &nick, &host, &cmd, &channel, &data);
+		}
+		string toString()
+		{
+			return ("NICK: " ~ nick ~ "\nHOST: " ~ host ~ "\nCMD: " ~ cmd ~ "\nCHANNEL: " ~ channel ~ "\nDATA: " ~ data).idup;
+		}
+}
+
+class ServerMessage
+{
+	private:
+		string msg;
+	public:
+		this(ParsedMessage msg)
+		{
+			this.msg = Irc.Message(":"~msg.nick~"!"~msg.host~" "~msg.cmd~" "~msg.channel~" :"~msg.data);
+		}
+		string toString() { return msg; }
+}
+
 
 class Connection
 {
@@ -88,7 +115,16 @@ class Connection
 				if(!ret) ret=replace(buf[0 .. recvd], "\r\n", "\n");
 				else ret=ret ~ replace(buf[0 .. recvd], "\r\n", "\n");
 			} while(recvd==BUFSIZE || ret[ret.length-1]!='\n');
-			return splitLines(ret.idup);
+			try
+			{
+				return splitLines(ret.idup);
+			}
+			catch(UtfException e)
+			{
+				string[] c = new string[1];
+				c[0]=ret.idup;
+				return c;
+			}
 		}
 		void Disconnect()
 		{
@@ -96,7 +132,19 @@ class Connection
 			socket.close();
 		}
 }
-
+/*
+class CommandExecuter
+{
+	static void function()[string] commands;
+	static this()
+	{
+		commands["JOIN"]=&Join;
+	}
+	static void Join(Connection c, ParsedMessage msg)
+	{
+	}
+}
+*/
 bool running=true;
 void main()
 {
@@ -110,7 +158,12 @@ void main()
 			if(s.length>=5 && s[0 .. 5]=="ERROR") running=false;
 			writeln(s);
 			c.PingPong(s);
-			Irc.Parse(s);
+			try
+			{
+				ParsedMessage m=Irc.Parse(s);
+				writeln(m);
+			}
+			catch(Exception e) {}
 		}
 	}
 }
