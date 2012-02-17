@@ -4,6 +4,7 @@ import std.array;
 import std.string;
 import std.format;
 import std.utf;
+import std.encoding;
 
 class Irc
 {
@@ -115,16 +116,12 @@ class Connection
 				if(!ret) ret=replace(buf[0 .. recvd], "\r\n", "\n");
 				else ret=ret ~ replace(buf[0 .. recvd], "\r\n", "\n");
 			} while(recvd==BUFSIZE || ret[ret.length-1]!='\n');
-			try
+			
+			for(int i=0; i<ret.length; ++i)
 			{
-				return splitLines(ret.idup);
+				if(ret[i]<'\u0000' || ret[i]>'\U0010FFFF') ret[i]='?';
 			}
-			catch(UtfException e)
-			{
-				string[] c = new string[1];
-				c[0]=ret.idup;
-				return c;
-			}
+			return ret.idup.split("\n");//splitLines(ret.idup);
 		}
 		void Disconnect()
 		{
@@ -156,14 +153,17 @@ void main()
 		foreach(string s ; msgs)
 		{
 			if(s.length>=5 && s[0 .. 5]=="ERROR") running=false;
-			writeln(s);
-			c.PingPong(s);
-			try
+			else if(s.length)
 			{
-				ParsedMessage m=Irc.Parse(s);
-				writeln(m);
+				writeln(s);
+				c.PingPong(s);
+				try
+				{
+					ParsedMessage m=Irc.Parse(s);
+					writeln(m);
+				}
+				catch(Exception e) {}
 			}
-			catch(Exception e) {}
 		}
 	}
 }
