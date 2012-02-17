@@ -97,12 +97,12 @@ class Connection
 		}
 		void Send(const string msg)
 		{
-			//writeln("Sent: " ~ msg);
+			writeln("Sent: " ~ msg);
 			socket.send(msg);
 		}
 		void Send(char[] msg)
 		{
-			//writeln("Sent: " ~ msg);
+			writeln("Sent: " ~ msg);
 			socket.send(msg);
 		}
 		string[] Recv()
@@ -124,19 +124,28 @@ class Connection
 			socket.close();
 		}
 }
-/*
 class CommandExecuter
 {
-	static void function()[string] commands;
+	static void function(Connection c, ParsedMessage msg)[string] exec;
 	static this()
 	{
-		commands["JOIN"]=&Join;
+		exec["JOIN"]=&Join;
+		exec["DIE"]=&Die;
+		exec["herp"]=&Herp;
 	}
 	static void Join(Connection c, ParsedMessage msg)
 	{
+		c.Send(Irc.Message(msg.data));
+	}
+	static void Die(Connection c, ParsedMessage msg)
+	{
+		running=false;
+	}
+	static void Herp(Connection c, ParsedMessage msg)
+	{
+		c.Send(Irc.Message("PRIVMSG " ~ msg.channel ~ " :derp"));
 	}
 }
-*/
 bool running=true;
 void main()
 {
@@ -156,9 +165,9 @@ void main()
 				{
 					ParsedMessage m=Irc.Parse(s);
 					writeln(m);
-					c.Send(Irc.Message("JOIN #aerolite"));
+					CommandExecuter.exec[m.data.split(" ")[0]](c, m);
 				}
-				catch(Exception e) {}
+				catch {}
 			}
 		}
 	}
