@@ -116,12 +116,7 @@ class Connection
 				if(!ret) ret=replace(buf[0 .. recvd], "\r\n", "\n");
 				else ret=ret ~ replace(buf[0 .. recvd], "\r\n", "\n");
 			} while(recvd==BUFSIZE || ret[ret.length-1]!='\n');
-			
-			for(int i=0; i<ret.length; ++i)
-			{
-				if(ret[i]<'\u0000' || ret[i]>'\U0010FFFF') ret[i]='?';
-			}
-			return ret.idup.split("\n");//splitLines(ret.idup);
+			return ret.idup.split("\n");
 		}
 		void Disconnect()
 		{
