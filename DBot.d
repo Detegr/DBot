@@ -156,6 +156,7 @@ void main()
 				{
 					ParsedMessage m=Irc.Parse(s);
 					writeln(m);
+					c.Send(Irc.Message("JOIN #aerolite"));
 				}
 				catch(Exception e) {}
 			}
