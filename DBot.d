@@ -1,3 +1,5 @@
+module DBot;
+
 import std.stdio;
 import std.socket;
 import std.array;
@@ -5,6 +7,8 @@ import std.string;
 import std.format;
 import std.utf;
 import std.encoding;
+import std.datetime;
+import unicafe;
 
 class Irc
 {
@@ -23,6 +27,10 @@ class Irc
 	static char[] Message(char[] msg)
 	{
 		return (msg ~ "\r\n");
+	}
+	static string PrivMsg(string channel, string msg)
+	{
+		return Irc.Message("PRIVMSG " ~ channel ~ " :" ~ msg);
 	}
 	static ParsedMessage Parse(string msg)
 	{
@@ -97,12 +105,12 @@ class Connection
 		}
 		void Send(const string msg)
 		{
-			writeln("Sent: " ~ msg);
+			//writeln("Sent: " ~ msg);
 			socket.send(msg);
 		}
 		void Send(char[] msg)
 		{
-			writeln("Sent: " ~ msg);
+			//writeln("Sent: " ~ msg);
 			socket.send(msg);
 		}
 		string[] Recv()
@@ -131,7 +139,8 @@ class CommandExecuter
 	{
 		exec["JOIN"]=&Join;
 		exec["DIE"]=&Die;
-		exec["herp"]=&Herp;
+		exec["!unicafe"]=&unicafe;
+		exec["!unicafe -k"]=&unicafec;
 	}
 	static void Join(Connection c, ParsedMessage msg)
 	{
@@ -141,16 +150,31 @@ class CommandExecuter
 	{
 		running=false;
 	}
-	static void Herp(Connection c, ParsedMessage msg)
+	static void unicafe(Connection c, ParsedMessage msg)
 	{
-		c.Send(Irc.Message("PRIVMSG " ~ msg.channel ~ " :derp"));
+		auto time = Clock.currTime;
+		c.Send(Irc.PrivMsg(msg.channel, "Food for: " ~ format("%d.%d.%d", time.day(), time.month(), time.year())));
+		c.Send(Irc.PrivMsg(msg.channel, "-----------"));
+		c.Send(Irc.PrivMsg(msg.channel, "Chemicum:"));
+		string[] foods=Unicafe.getFoods(Unicafe.Restaurants.CHEMICUM);
+		foreach(string food ; foods) c.Send(Irc.PrivMsg(msg.channel, food));
+		c.Send(Irc.PrivMsg(msg.channel, "-----------"));
+		c.Send(Irc.PrivMsg(msg.channel, "Exactum:"));
+		foods=Unicafe.getFoods(Unicafe.Restaurants.EXACTUM);
+		foreach(string food ; foods) c.Send(Irc.PrivMsg(msg.channel, food));
+	}
+	static void unicafec(Connection c, ParsedMessage msg)
+	{
+		c.Send(Irc.PrivMsg(msg.channel, "-k is not currently supported."));
 	}
 }
+
 bool running=true;
 void main()
 {
 	scope auto c = new Connection();
 	c.Connect(new InternetAddress("irc.quakenet.org", 6667));
+	scope auto command = CommandExecuter.exec;
 	while(running)
 	{
 		string[] msgs=c.Recv();
@@ -163,11 +187,12 @@ void main()
 				c.PingPong(s);
 				try
 				{
-					ParsedMessage m=Irc.Parse(s);
-					writeln(m);
-					CommandExecuter.exec[m.data.split(" ")[0]](c, m);
+					scope ParsedMessage m=Irc.Parse(s);
+					scope string cmd = m.data.split(" ")[0];
+					command[cmd](c, m);
 				}
-				catch {}
+				catch(Exception e) {}
+				catch {writeln("Suddenly an error.");}
 			}
 		}
 	}
