@@ -23,6 +23,14 @@ class Config
 		void addAuthedHost(string host) { this.authedhosts ~= host; }
 		string[] getAutoJoins() { return autojoins.dup; }
 		string[] getAuthedHosts() { return authedhosts.dup; }
+		bool isAuthed(string host)
+		{
+			foreach(string h ; authedhosts)
+			{
+				if(h==host) return true;
+			}
+			return false;
+		}
 		this(string configfile)
 		{
 			string txt;

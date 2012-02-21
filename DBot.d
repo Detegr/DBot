@@ -8,7 +8,9 @@ import std.format;
 import std.utf;
 import std.encoding;
 import std.datetime;
+import core.thread;
 import unicafe;
+import config;
 
 class Irc
 {
@@ -132,9 +134,10 @@ class Connection
 			socket.close();
 		}
 }
+
 class CommandExecuter
 {
-	static void function(Connection c, ParsedMessage msg)[string] exec;
+	static void function(Connection c, ParsedMessage msg, Config conf)[string] exec;
 	static this()
 	{
 		exec["JOIN"]=&Join;
@@ -142,15 +145,19 @@ class CommandExecuter
 		exec["!unicafe"]=&unicafe;
 		exec["!unicafe -k"]=&unicafec;
 	}
-	static void Join(Connection c, ParsedMessage msg)
+	static void Join(Connection c, ParsedMessage msg, Config conf)
 	{
-		c.Send(Irc.Message(msg.data));
+		if(conf.isAuthed(msg.nick ~ "!" ~ msg.host))
+		{
+			c.Send(Irc.Message(msg.data));
+		}
+		else c.Send(Irc.PrivMsg(msg.channel, "Access denied."));
 	}
-	static void Die(Connection c, ParsedMessage msg)
+	static void Die(Connection c, ParsedMessage msg, Config conf)
 	{
-		running=false;
+		if(conf.isAuthed(msg.nick ~ "!" ~ msg.host) && msg.channel==c.nick) running=false;
 	}
-	static void unicafe(Connection c, ParsedMessage msg)
+	static void unicafe(Connection c, ParsedMessage msg, Config conf)
 	{
 		auto time = Clock.currTime;
 		c.Send(Irc.PrivMsg(msg.channel, "Food for: " ~ format("%d.%d.%d", time.day(), time.month(), time.year())));
@@ -163,7 +170,7 @@ class CommandExecuter
 		foods=Unicafe.getFoods(Unicafe.Restaurants.EXACTUM);
 		foreach(string food ; foods) c.Send(Irc.PrivMsg(msg.channel, food));
 	}
-	static void unicafec(Connection c, ParsedMessage msg)
+	static void unicafec(Connection c, ParsedMessage msg, Config conf)
 	{
 		c.Send(Irc.PrivMsg(msg.channel, "-k is not currently supported."));
 	}
@@ -173,26 +180,41 @@ bool running=true;
 void main()
 {
 	scope auto c = new Connection();
-	c.Connect(new InternetAddress("irc.quakenet.org", 6667));
+	scope auto conf = new Config("dbot.conf");
+	c.Connect(new InternetAddress("irc.cc.tut.fi", 6667));
 	scope auto command = CommandExecuter.exec;
+	bool triedjoining=false;
 	while(running)
 	{
 		string[] msgs=c.Recv();
 		foreach(string s ; msgs)
 		{
-			if(s.length>=5 && s[0 .. 5]=="ERROR") running=false;
+			if(s.length>=5 && s[0 .. 5]=="ERROR")
+			{
+				// Experimental reconnect on error.
+				Thread.sleep(dur!("seconds")(5));
+				main();
+				return;
+			}
 			else if(s.length)
 			{
 				writeln(s);
 				c.PingPong(s);
 				try
 				{
+					if(!triedjoining && s.indexOf("MODE")!=-1)
+					{
+						foreach(string join ; conf.getAutoJoins())
+						{
+							c.Send(Irc.Message("JOIN " ~ join));
+						}
+						triedjoining=true;
+					}
 					scope ParsedMessage m=Irc.Parse(s);
 					scope string cmd = m.data.split(" ")[0];
-					command[cmd](c, m);
+					command[cmd](c,m,conf);
 				}
-				catch(Exception e) {}
-				catch {writeln("Suddenly an error.");}
+				catch {}
 			}
 		}
 	}
