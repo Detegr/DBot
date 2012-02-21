@@ -1,4 +1,4 @@
-SRC=DBot.d unicafe.d
+SRC=DBot.d unicafe.d config.d
 EXE=dbot
 
 #####################
