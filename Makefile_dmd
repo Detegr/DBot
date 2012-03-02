@@ -1,0 +1,17 @@
+SRC=DBot.d unicafe.d config.d
+EXE=dbot
+
+#####################
+
+CC=dmd/dmd2/linux/bin32/dmd
+LIBS=#-lcurl
+
+all: dbot
+
+dbot: $(SRC)
+	$(CC) $(SRC) $(LIBS) -L-lcurl -ofdbot -gc
+
+clean:
+	-rm $(EXE)
+
+.PHONY: all clean

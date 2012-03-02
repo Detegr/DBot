@@ -181,7 +181,7 @@ void main()
 {
 	scope auto c = new Connection();
 	scope auto conf = new Config("dbot.conf");
-	c.Connect(new InternetAddress("irc.cc.tut.fi", 6667));
+	c.Connect(new InternetAddress("irc.stealth.net", 6667));
 	scope auto command = CommandExecuter.exec;
 	bool triedjoining=false;
 	while(running)
