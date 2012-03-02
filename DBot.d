@@ -163,11 +163,11 @@ class CommandExecuter
 		c.Send(Irc.PrivMsg(msg.channel, "Food for: " ~ format("%d.%d.%d", time.day(), time.month(), time.year())));
 		c.Send(Irc.PrivMsg(msg.channel, "-----------"));
 		c.Send(Irc.PrivMsg(msg.channel, "Chemicum:"));
-		string[] foods=Unicafe.getFoods(Unicafe.Restaurants.CHEMICUM);
+		string[] foods=Unicafe.getFoods(Unicafe.Restaurant.CHEMICUM);
 		foreach(string food ; foods) c.Send(Irc.PrivMsg(msg.channel, food));
 		c.Send(Irc.PrivMsg(msg.channel, "-----------"));
 		c.Send(Irc.PrivMsg(msg.channel, "Exactum:"));
-		foods=Unicafe.getFoods(Unicafe.Restaurants.EXACTUM);
+		foods=Unicafe.getFoods(Unicafe.Restaurant.EXACTUM);
 		foreach(string food ; foods) c.Send(Irc.PrivMsg(msg.channel, food));
 	}
 	static void unicafec(Connection c, ParsedMessage msg, Config conf)
