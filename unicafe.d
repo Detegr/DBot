@@ -50,7 +50,6 @@ class Curl
 		}
 }
 
-
 class Unicafe
 {
 	enum Restaurant

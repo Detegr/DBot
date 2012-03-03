@@ -21,9 +21,9 @@ class Config
 	public:
 		void addAutoJoin(string autojoin) { this.autojoins ~= autojoin; }
 		void addAuthedHost(string host) { this.authedhosts ~= host; }
-		string[] getAutoJoins() { return autojoins.dup; }
-		string[] getAuthedHosts() { return authedhosts.dup; }
-		bool isAuthed(string host)
+		string[] getAutoJoins() const { return autojoins.dup; }
+		string[] getAuthedHosts() const { return authedhosts.dup; }
+		bool isAuthed(string host) const
 		{
 			foreach(string h ; authedhosts)
 			{

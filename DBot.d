@@ -14,27 +14,27 @@ import config;
 
 class Irc
 {
-	static string User(Connection c)
+	static string User(ref Connection c)
 	{
 		return Message("USER " ~ c.realname ~ " " ~ c.realname ~ " * :" ~ c.realname);
 	}
-	static string Nick(Connection c)
+	static string Nick(ref Connection c)
 	{
 		return Message("NICK " ~ c.nick);
 	}
-	static string Message(string msg)
+	static string Message(in string msg)
 	{
 		return (msg ~ "\r\n");
 	}
-	static char[] Message(char[] msg)
+	static char[] Message(in char[] msg)
 	{
 		return (msg ~ "\r\n");
 	}
-	static string PrivMsg(string channel, string msg)
+	static string PrivMsg(in string channel, in string msg)
 	{
 		return Irc.Message("PRIVMSG " ~ channel ~ " :" ~ msg);
 	}
-	static ParsedMessage Parse(string msg)
+	static ParsedMessage Parse(in string msg)
 	{
 		if(msg[0]!=':' || indexOf(msg, "PRIVMSG")==-1 || indexOf(msg, '!')==-1) throw new Exception("Not a PRIVMSG");
 		return new ParsedMessage(msg);
@@ -105,12 +105,12 @@ class Connection
 			Send(Irc.Nick(this));
 			Send(Irc.User(this));
 		}
-		void Send(const string msg)
+		void Send(in string msg)
 		{
 			//writeln("Sent: " ~ msg);
 			socket.send(msg);
 		}
-		void Send(char[] msg)
+		void Send(in char[] msg)
 		{
 			//writeln("Sent: " ~ msg);
 			socket.send(msg);
@@ -137,7 +137,7 @@ class Connection
 
 class CommandExecuter
 {
-	static void function(Connection c, ParsedMessage msg, Config conf)[string] exec;
+	static void function(ref Connection c, ref ParsedMessage msg, ref Config conf)[string] exec;
 	static this()
 	{
 		exec["JOIN"]=&Join;
@@ -145,7 +145,7 @@ class CommandExecuter
 		exec["!unicafe"]=&unicafe;
 		exec["!unicafe -k"]=&unicafec;
 	}
-	static void Join(Connection c, ParsedMessage msg, Config conf)
+	static void Join(ref Connection c, ref ParsedMessage msg, ref Config conf)
 	{
 		if(conf.isAuthed(msg.nick ~ "!" ~ msg.host))
 		{
@@ -153,11 +153,11 @@ class CommandExecuter
 		}
 		else c.Send(Irc.PrivMsg(msg.channel, "Access denied."));
 	}
-	static void Die(Connection c, ParsedMessage msg, Config conf)
+	static void Die(ref Connection c, ref ParsedMessage msg, ref Config conf)
 	{
 		if(conf.isAuthed(msg.nick ~ "!" ~ msg.host) && msg.channel==c.nick) running=false;
 	}
-	static void unicafe(Connection c, ParsedMessage msg, Config conf)
+	static void unicafe(ref Connection c, ref ParsedMessage msg, ref Config conf)
 	{
 		auto time = Clock.currTime;
 		c.Send(Irc.PrivMsg(msg.channel, "Food for: " ~ format("%d.%d.%d", time.day(), time.month(), time.year())));
@@ -170,7 +170,7 @@ class CommandExecuter
 		foods=Unicafe.getFoods(Unicafe.Restaurant.EXACTUM);
 		foreach(string food ; foods) c.Send(Irc.PrivMsg(msg.channel, food));
 	}
-	static void unicafec(Connection c, ParsedMessage msg, Config conf)
+	static void unicafec(ref Connection c, ref ParsedMessage msg, ref Config conf)
 	{
 		c.Send(Irc.PrivMsg(msg.channel, "-k is not currently supported."));
 	}
