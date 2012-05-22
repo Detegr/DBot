@@ -1,9 +1,9 @@
-SRC=DBot.d unicafe.d config.d
+SRC=DBot.d unicafe.d config.d wikla.d
 EXE=dbot
 
 #####################
 
-CC=dmd/dmd2/linux/bin32/dmd
+CC=dmd
 LIBS=#-lcurl
 
 all: dbot

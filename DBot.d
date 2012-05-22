@@ -11,6 +11,7 @@ import std.datetime;
 import core.thread;
 import unicafe;
 import config;
+import WiklaModule;
 
 class Irc
 {
@@ -144,6 +145,7 @@ class CommandExecuter
 		exec["DIE"]=&Die;
 		exec["!unicafe"]=&unicafe;
 		exec["!unicafe -k"]=&unicafec;
+		exec["!wikla"]=&wikla;
 	}
 	static void Join(ref Connection c, ref ParsedMessage msg, ref Config conf)
 	{
@@ -173,6 +175,10 @@ class CommandExecuter
 	static void unicafec(ref Connection c, ref ParsedMessage msg, ref Config conf)
 	{
 		c.Send(Irc.PrivMsg(msg.channel, "-k is not currently supported."));
+	}
+	static void wikla(ref Connection c, ref ParsedMessage msg, ref Config conf)
+	{
+		c.Send(Irc.PrivMsg(msg.channel, WiklaModule.WiklaQuoter.quote()));
 	}
 }
 
