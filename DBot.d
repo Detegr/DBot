@@ -90,7 +90,7 @@ class Connection
 		}
 
 	public:
-		this(string nick="DBot", string realname="DBot")
+		this(string nick="DBott", string realname="DBot")
 		{
 			this.nick=nick;
 			this.realname=realname;
@@ -104,7 +104,16 @@ class Connection
 		{
 			this.address=addr;
 			writeln("Connecting to " ~ addr.toHostNameString() ~ ":" ~ addr.toPortString());
-			socket.connect(addr);
+			try
+			{
+				socket.connect(addr);
+			}
+			catch
+			{
+				writeln("Exception occurred when connecting...retrying");
+				Thread.sleep(dur!("seconds")(5));
+				Reconnect();
+			}
 			Send(Irc.Nick(this));
 			Send(Irc.User(this));
 		}
@@ -130,12 +139,14 @@ class Connection
 			do
 			{
 				recvd=socket.receive(buf);
-				if(recvd==0) break;
+				if(recvd==0 || recvd==Socket.ERROR) break;
 				if(!ret) ret=replace(buf[0 .. recvd], "\r\n", "\n");
 				else ret=ret ~ replace(buf[0 .. recvd], "\r\n", "\n");
 			} while(recvd==BUFSIZE || ret[ret.length-1]!='\n');
-			if(recvd==0)
+			if(recvd==0 || recvd==Socket.ERROR)
 			{
+				writeln("Socket failure! Reconnecting...");
+				Thread.sleep(dur!("seconds")(5));
 				Reconnect();
 				return ["Network error."];
 			}
@@ -199,7 +210,7 @@ void main()
 {
 	scope auto c = new Connection();
 	scope auto conf = new Config("dbot.conf");
-	c.Connect(new InternetAddress("irc.stealth.net", 6667));
+	c.Connect(new InternetAddress("irc.quakenet.org", 6667));
 	scope auto command = CommandExecuter.exec;
 	bool triedjoining=false;
 	while(running)
