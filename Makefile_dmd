@@ -9,7 +9,7 @@ LIBS=#-lcurl
 all: dbot
 
 dbot: $(SRC)
-	$(CC) $(SRC) $(LIBS) -L-lcurl -ofdbot -gc
+	$(CC) $(SRC) $(LIBS) -L-lcurl -L-lssl -ofdbot -gc
 
 clean:
 	-rm $(EXE)

@@ -74,6 +74,7 @@ class Connection
 {
 	private:
 		immutable auto BUFSIZE=1024;
+		InternetAddress address;
 		string nick;
 		string realname;
 		TcpSocket socket;
@@ -101,10 +102,15 @@ class Connection
 		}
 		void Connect(scope InternetAddress addr)
 		{
+			this.address=addr;
 			writeln("Connecting to " ~ addr.toHostNameString() ~ ":" ~ addr.toPortString());
 			socket.connect(addr);
 			Send(Irc.Nick(this));
 			Send(Irc.User(this));
+		}
+		void Reconnect()
+		{
+			Connect(this.address);
 		}
 		void Send(in string msg)
 		{
@@ -124,9 +130,15 @@ class Connection
 			do
 			{
 				recvd=socket.receive(buf);
+				if(recvd==0) break;
 				if(!ret) ret=replace(buf[0 .. recvd], "\r\n", "\n");
 				else ret=ret ~ replace(buf[0 .. recvd], "\r\n", "\n");
 			} while(recvd==BUFSIZE || ret[ret.length-1]!='\n');
+			if(recvd==0)
+			{
+				Reconnect();
+				return ["Network error."];
+			}
 			return ret.idup.split("\n");
 		}
 		void Disconnect()
@@ -197,9 +209,7 @@ void main()
 		{
 			if(s.length>=5 && s[0 .. 5]=="ERROR")
 			{
-				// Experimental reconnect on error.
-				Thread.sleep(dur!("seconds")(5));
-				main();
+				c.Reconnect();
 				return;
 			}
 			else if(s.length)
