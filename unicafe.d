@@ -54,6 +54,8 @@ class Unicafe
 {
 	enum Restaurant
 	{
+		PORTHANIA=3,
+		PAARAKENNUS=4,
 		CHEMICUM=10,
 		EXACTUM=11
 	}
