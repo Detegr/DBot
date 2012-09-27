@@ -166,7 +166,7 @@ class CommandExecuter
 	{
 		exec["JOIN"]=&Join;
 		exec["DIE"]=&Die;
-		exec["!unicafe"]=&unicafe;
+		exec["!unicafe"]=&unicafek;
 		exec["!unicafe -k"]=&unicafec;
 		exec["!wikla"]=&wikla;
 	}
@@ -182,22 +182,41 @@ class CommandExecuter
 	{
 		if(conf.isAuthed(msg.nick ~ "!" ~ msg.host) && msg.channel==c.nick) running=false;
 	}
-	static void unicafe(ref Connection c, ref ParsedMessage msg, ref Config conf)
+	static void unicafe(ref Connection c, ref ParsedMessage msg, ref Config conf, Unicafe.Restaurant[] restaurants)
 	{
 		auto time = Clock.currTime;
 		c.Send(Irc.PrivMsg(msg.channel, "Food for: " ~ format("%d.%d.%d", time.day(), time.month(), time.year())));
-		c.Send(Irc.PrivMsg(msg.channel, "-----------"));
-		c.Send(Irc.PrivMsg(msg.channel, "Chemicum:"));
-		string[] foods=Unicafe.getFoods(Unicafe.Restaurant.CHEMICUM);
-		foreach(string food ; foods) c.Send(Irc.PrivMsg(msg.channel, food));
-		c.Send(Irc.PrivMsg(msg.channel, "-----------"));
-		c.Send(Irc.PrivMsg(msg.channel, "Exactum:"));
-		foods=Unicafe.getFoods(Unicafe.Restaurant.EXACTUM);
-		foreach(string food ; foods) c.Send(Irc.PrivMsg(msg.channel, food));
+		foreach(Unicafe.Restaurant r ; restaurants)
+		{
+			c.Send(Irc.PrivMsg(msg.channel, "-----------"));
+			switch(r)
+			{
+				case Unicafe.Restaurant.CHEMICUM:
+					c.Send(Irc.PrivMsg(msg.channel, "Chemicum:"));
+					break;
+				case Unicafe.Restaurant.EXACTUM:
+					c.Send(Irc.PrivMsg(msg.channel, "Exactum:"));
+					break;
+				case Unicafe.Restaurant.PORTHANIA:
+					c.Send(Irc.PrivMsg(msg.channel, "Porthania:"));
+					break;
+				case Unicafe.Restaurant.PAARAKENNUS:
+					c.Send(Irc.PrivMsg(msg.channel, "Päärakennus:"));
+					break;
+				default:
+					break;
+			}
+			string[] foods=Unicafe.getFoods(r);
+			foreach(string food ; foods) c.Send(Irc.PrivMsg(msg.channel, food));
+		}
+	}
+	static void unicafek(ref Connection c, ref ParsedMessage msg, ref Config conf)
+	{
+		unicafe(c,msg,conf,[Unicafe.Restaurant.CHEMICUM, Unicafe.Restaurant.EXACTUM]);
 	}
 	static void unicafec(ref Connection c, ref ParsedMessage msg, ref Config conf)
 	{
-		c.Send(Irc.PrivMsg(msg.channel, "-k is not currently supported."));
+		unicafe(c,msg,conf,[Unicafe.Restaurant.PORTHANIA, Unicafe.Restaurant.PAARAKENNUS]);
 	}
 	static void wikla(ref Connection c, ref ParsedMessage msg, ref Config conf)
 	{
@@ -210,7 +229,7 @@ void main()
 {
 	scope auto c = new Connection();
 	scope auto conf = new Config("dbot.conf");
-	c.Connect(new InternetAddress("irc.quakenet.org", 6667));
+	c.Connect(new InternetAddress("irc.stealth.net", 6667));
 	scope auto command = CommandExecuter.exec;
 	bool triedjoining=false;
 	while(running)
@@ -238,8 +257,7 @@ void main()
 						triedjoining=true;
 					}
 					scope ParsedMessage m=Irc.Parse(s);
-					scope string cmd = m.data.split(" ")[0];
-					command[cmd](c,m,conf);
+					command[m.data](c,m,conf);
 				}
 				catch {}
 			}
