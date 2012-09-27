@@ -48,6 +48,15 @@ class Curl
 			curl_easy_perform(handle);
 			return data.idup;
 		}
+		string post(string url, string postdata)
+		{
+			curl_easy_setopt(handle, CurlOption.writefunction, &callback);
+			curl_easy_setopt(handle, CURLOPT_WRITEDATA, &data);
+			curl_easy_setopt(handle, CurlOption.url, url.toStringz);
+			curl_easy_setopt(handle, CurlOption.postfields, postdata.toStringz);
+			curl_easy_perform(handle);
+			return data.idup;
+		}
 }
 
 class Unicafe
